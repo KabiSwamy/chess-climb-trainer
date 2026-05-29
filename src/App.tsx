@@ -29,6 +29,7 @@ import { ChecklistPanel } from './components/ChecklistPanel';
 import { ModeSelector } from './components/ModeSelector';
 import { ProgressStats } from './components/ProgressStats';
 import { Dashboard } from './components/Dashboard';
+import { CoachChat } from './components/CoachChat';
 
 const HIGHLIGHT_LAST: CSSProperties = { backgroundColor: 'rgba(255, 213, 79, 0.55)' };
 const HIGHLIGHT_BEST: CSSProperties = { backgroundColor: 'rgba(102, 187, 106, 0.6)' };
@@ -450,6 +451,7 @@ export default function App() {
               dailyTotal={dailyTotal}
             />
             <HintPanel puzzle={puzzle} hintLevel={hintLevel} revealed={status === 'revealed'} />
+            <CoachChat puzzle={puzzle} revealed={status !== 'playing'} />
             <ChecklistPanel
               checklistMode={checklistMode}
               answers={checklistAnswers}
