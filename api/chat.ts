@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' };
 
+declare const process: { env: Record<string, string | undefined> };
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
