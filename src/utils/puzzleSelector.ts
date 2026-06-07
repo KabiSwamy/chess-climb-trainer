@@ -17,22 +17,28 @@ function byId(puzzles: Puzzle[], id: string): Puzzle | undefined {
   return puzzles.find((p) => p.id === id);
 }
 
-/** Pick randomly from the `k` puzzles whose difficulty is closest to `target`. */
+/**
+ * Pick randomly from the `k` puzzles whose difficulty is closest to `target`,
+ * skipping any recently-seen puzzle so the trainer rotates through the pool
+ * instead of repeating the same handful. If every near-difficulty candidate is
+ * excluded, the exclusion is progressively relaxed so we always return a puzzle.
+ */
 function pickNearDifficulty(
   pool: Puzzle[],
   target: number,
-  excludeId?: string,
-  k = 6,
+  exclude: Set<string>,
+  k = 14,
 ): Puzzle | null {
-  const candidates = pool.filter((p) => p.id !== excludeId);
-  if (candidates.length === 0) {
-    // Only the excluded puzzle is available — allow repeating it.
-    return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
-  }
-  const sorted = [...candidates].sort(
+  if (pool.length === 0) return null;
+
+  const ranked = [...pool].sort(
     (a, b) => Math.abs(a.difficulty - target) - Math.abs(b.difficulty - target),
   );
-  const window = sorted.slice(0, Math.min(k, sorted.length));
+
+  // Prefer unseen puzzles near the target difficulty.
+  const fresh = ranked.filter((p) => !exclude.has(p.id));
+  const usable = fresh.length > 0 ? fresh : ranked;
+  const window = usable.slice(0, Math.min(k, usable.length));
   return window[Math.floor(Math.random() * window.length)];
 }
 
@@ -97,6 +103,8 @@ export interface SelectOptions {
   mode: TrainingMode;
   theme?: PuzzleTheme;
   excludeId?: string;
+  /** Recently-shown puzzle ids to avoid repeating (rotation window). */
+  recentIds?: string[];
   /** For daily mode: ids the user has already completed today. */
   completedIds?: string[];
   /** For daily mode: the ordered list of puzzle ids for today. */
@@ -118,6 +126,9 @@ export function selectPuzzle(
   const { mode, theme, excludeId } = options;
   const allowReview = options.allowReview ?? mode !== 'theme';
 
+  const exclude = new Set<string>(options.recentIds ?? []);
+  if (excludeId) exclude.add(excludeId);
+
   // Daily climb: serve the next uncompleted puzzle in order.
   if (mode === 'daily') {
     const ids = options.dailyIds ?? [];
@@ -128,7 +139,7 @@ export function selectPuzzle(
   }
 
   // Occasionally surface a due review puzzle (spaced repetition).
-  if (allowReview && Math.random() < 0.4) {
+  if (allowReview && Math.random() < 0.35) {
     const reviewId = nextDueReview(stats.reviewQueue, Date.now(), excludeId);
     const reviewPuzzle = reviewId ? byId(puzzles, reviewId) : undefined;
     if (reviewPuzzle) return reviewPuzzle;
@@ -136,7 +147,7 @@ export function selectPuzzle(
 
   if (mode === 'theme') {
     const pool = puzzles.filter((p) => p.theme === theme);
-    return pickNearDifficulty(pool.length ? pool : puzzles, stats.difficultyTarget, excludeId);
+    return pickNearDifficulty(pool.length ? pool : puzzles, stats.difficultyTarget, exclude);
   }
 
   if (mode === 'weakness') {
@@ -144,11 +155,11 @@ export function selectPuzzle(
     const pool = weak.length
       ? puzzles.filter((p) => weak.includes(p.theme))
       : puzzles;
-    return pickNearDifficulty(pool.length ? pool : puzzles, stats.difficultyTarget, excludeId);
+    return pickNearDifficulty(pool.length ? pool : puzzles, stats.difficultyTarget, exclude);
   }
 
   // random + checklist both draw from the whole pool near the difficulty target.
-  return pickNearDifficulty(puzzles, stats.difficultyTarget, excludeId);
+  return pickNearDifficulty(puzzles, stats.difficultyTarget, exclude);
 }
 
 /**

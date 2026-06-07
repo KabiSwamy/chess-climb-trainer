@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "validate:puzzles": "tsx scripts/validatePuzzles.ts"
+    "validate:puzzles": "tsx scripts/validatePuzzles.ts",
+    "import:puzzles": "tsx scripts/importLichess.ts"
   },
   "dependencies": {
     "chess.js": "^1.4.0",

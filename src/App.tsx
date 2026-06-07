@@ -58,6 +58,8 @@ function squareStylesFor(
 }
 
 const themes = listThemes(puzzles);
+// Avoid repeating any of the most recently shown puzzles before rotating back.
+const RECENT_WINDOW = Math.min(25, Math.floor(puzzles.length / 2));
 
 export default function App() {
   const [stats, setStats] = useState<Stats>(() => loadStats());
@@ -81,6 +83,7 @@ export default function App() {
   const [checklistAnswers, setChecklistAnswers] = useState<boolean[]>(() =>
     Array(5).fill(false),
   );
+  const [recentIds, setRecentIds] = useState<string[]>([puzzles[0].id]);
 
   const recordedRef = useRef(false);
   const replyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +117,7 @@ export default function App() {
     sessionToken.current += 1;
     if (replyTimer.current) clearTimeout(replyTimer.current);
     recordedRef.current = false;
+    setRecentIds((prev) => [next.id, ...prev.filter((id) => id !== next.id)].slice(0, RECENT_WINDOW));
     setPuzzle(next);
     setFen(next.fen);
     setPlyIndex(0);
@@ -145,6 +149,7 @@ export default function App() {
         mode: useMode,
         theme: selectedTheme,
         excludeId: puzzle.id,
+        recentIds,
         dailyIds: daily?.puzzleIds,
         completedIds: daily?.completedIds,
       });
@@ -161,7 +166,7 @@ export default function App() {
         });
       }
     },
-    [stats, mode, selectedTheme, puzzle.id, loadPuzzle],
+    [stats, mode, selectedTheme, puzzle.id, recentIds, loadPuzzle],
   );
 
   const record = useCallback(
@@ -334,10 +339,10 @@ export default function App() {
   const handleThemeChange = useCallback(
     (theme: PuzzleTheme) => {
       setSelectedTheme(theme);
-      const next = selectPuzzle(puzzles, stats, { mode: 'theme', theme });
+      const next = selectPuzzle(puzzles, stats, { mode: 'theme', theme, recentIds });
       if (next) loadPuzzle(next);
     },
-    [stats, loadPuzzle],
+    [stats, recentIds, loadPuzzle],
   );
 
   const toggleChecklist = useCallback((index: number) => {

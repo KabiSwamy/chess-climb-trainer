@@ -17,9 +17,14 @@ ask the right questions *before* you move.
 
 ## Features
 
-- **20 validated puzzles** spanning the patterns that decide beginner games: hanging
+- **300+ validated puzzles** spanning the patterns that decide beginner games: hanging
   pieces, free queen/rook, mate in 1 & 2, forks, pins, skewers, back-rank mates,
-  discovered attacks, removing the defender, and blunder prevention.
+  discovered attacks, removing the defender, and blunder prevention. A hand-authored
+  core set (covering the defensive themes) is combined with a large set imported and
+  re-validated from the Lichess open puzzle database, balanced across rating bands so
+  beginners get plenty of approachable puzzles.
+- **No repeats** — the selector rotates through the whole pool, skipping the most
+  recently seen puzzles instead of cycling the same handful.
 - **Five training modes**
   - **Random** — a mix of puzzles near your level.
   - **Theme** — drill a single tactical idea.
@@ -63,9 +68,14 @@ Then open the printed local URL (default http://localhost:5173).
 
 ```bash
 npm run validate:puzzles   # verify every FEN, move, and mate with chess.js
+npm run import:puzzles     # (re)import + validate beginner puzzles from Lichess
 npm run build              # typecheck (tsc -b) and bundle for production
 npm run preview            # preview the production build locally
 ```
+
+The imported puzzles live in `src/data/puzzles.generated.ts` (auto-generated; do not
+hand-edit). Hand-authored puzzles live in `src/data/puzzles.core.ts`, and
+`src/data/puzzles.ts` combines the two.
 
 ## How puzzles are validated
 
@@ -100,8 +110,9 @@ scripts/
 
 - Each puzzle stores a single solution line, so an alternate strong move may be marked
   wrong even when it is also good.
-- The 20-puzzle set is intentionally small and beginner-focused; it is meant for
-  habit-building, not exhaustive coverage.
+- The imported puzzles use concise, theme-templated teaching notes rather than fully
+  bespoke prose for each one (the in-app coach chatbot fills in deeper, position-specific
+  explanations on request).
 - Progress lives in your browser's LocalStorage — clearing site data resets it, and it
   does not sync across devices.
 
